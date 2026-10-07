@@ -2,8 +2,9 @@
 
 # Anki Review-Finder (Jev Linter)
 
-> 🧪 **Project Status: Alpha / Experimental**  
-> This tool is in active early development. Heuristics, prompt formats, and tag naming conventions are subject to change. Feedback, edge-case reports, and GitHub Issues are welcome.
+> [!CAUTION]
+> **Project Status: Alpha / Experimental**
+> This tool is in active early development. Heuristics, prompt formats, and tag naming conventions are subject to change.
 
 A CLI tool for automated quality auditing of Anki flashcards via AnkiConnect and the TypeSafe Jev API. It deterministically detects cards with structural defects (e.g., scope underkill, answer leaks, missing context/orphans, collection traps, binary questions) and writes corresponding diagnostic tags directly to Anki while generating an interactive HTML audit report.
 
