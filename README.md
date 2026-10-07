@@ -1,6 +1,5 @@
 # Anki Review-Finder (Jev Linter)
 
-# Anki Review-Finder (Jev Linter)
 
 > [!CAUTION]
 > **Project Status: Alpha / Experimental**
