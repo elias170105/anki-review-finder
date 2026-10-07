@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.env
+.venv/
+venv/
+env/
+
+# Anki Review Output
+review_report*.html
+
+# IDEs
+.vscode/
+.idea/
