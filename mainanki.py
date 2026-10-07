@@ -29,8 +29,7 @@ try:
 except ImportError:
     pass
 
-VERSION = "v1"
-TAG_PREFIX = f"linter::{VERSION}"
+VERSION = "v0.1.0-alpha"
 PRICE_PER_M_INPUT_TOKENS = 0.042  # 0,042 $ pro 1.000.000 Input-Tokens
 
 # Bekannte Standard-Feldnamen für die automatische Erkennung
