@@ -19,6 +19,7 @@ import sys
 import time
 from dataclasses import dataclass, field
 from typing import Any
+from reporter import generate_html_report
 
 import aiohttp
 
@@ -440,106 +441,6 @@ def evaluate_decision_logic(
     # Extrahiere die Antworten aus dem API-Key "answers"
     answers = data.get("answers", data)
     return evaluate_decisions(answers)
-
-def generate_html_report(
-    eval_records: list[dict[str, Any]], filename: str = "review_report.html"
-) -> None:
-    """Erzeugt einen lokalen, filterbaren HTML-Bericht ohne zusätzliche API-Kosten."""
-    # Nur Karten aufnehmen, die tatsächlich Überarbeitungsbedarf haben
-    flagged_cards = [r for r in eval_records if r["priority"] != "clean"]
-
-    # Nach Priorität sortieren: high zuerst, dann medium, dann low
-    prio_order = {"high": 0, "medium": 1, "low": 2}
-    flagged_cards.sort(key=lambda x: prio_order.get(x["priority"], 99))
-
-    rows_html = []
-    for c in flagged_cards:
-        prio_color = {
-            "high": "#e63946",
-            "medium": "#f4a261",
-            "low": "#e9c46a",
-        }.get(c["priority"], "#6c757d")
-
-        # Details/Gründe aufbereiten
-        reasons = []
-        for metric, val in c["metrics"].items():
-            if metric == "clarity":
-                if val <= 3.0:
-                    reasons.append(
-                        f"<b>Klarheit mangelhaft:</b> {val:.1f} / 5.0"
-                    )
-            elif val >= 0.60:
-                pct = int(val * 100)
-                reasons.append(f"<b>{metric}:</b> {pct} % Wahrscheinlichkeit")
-
-        reasons_list = (
-            "".join(f"<li>{r}</li>" for r in reasons)
-            if reasons
-            else "Keine Einzelmetrik über Schwelle"
-        )
-
-        rows_html.append(
-            f"""
-        <tr>
-            <td><span class="badge" style="background-color: {prio_color}">{c['priority'].upper()}</span></td>
-            <td><code>{c['note_id']}</code></td>
-            <td class="text-col">{html.escape(c['front'])}</td>
-            <td class="text-col">{html.escape(c['back'])}</td>
-            <td><ul class="reason-list">{reasons_list}</ul></td>
-        </tr>
-        """
-        )
-
-    table_body = (
-        "\n".join(rows_html)
-        if rows_html
-        else "<tr><td colspan='5'>Keine auffälligen Karten gefunden.</td></tr>"
-    )
-
-    html_content = f"""<!DOCTYPE html>
-<html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <title>Anki Review Report</title>
-    <style>
-        body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 2rem; background: #0f172a; color: #e2e8f0; }}
-        h1 {{ color: #f8fafc; margin-bottom: 0.5rem; }}
-        p {{ color: #94a3b8; margin-bottom: 1.5rem; }}
-        table {{ width: 100%; border-collapse: collapse; background: #1e293b; border-radius: 8px; overflow: hidden; }}
-        th, td {{ padding: 12px 16px; text-align: left; border-bottom: 1px solid #334155; vertical-align: top; }}
-        th {{ background: #0f172a; color: #cbd5e1; font-weight: 600; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em; }}
-        tr:hover {{ background: #243247; }}
-        .badge {{ padding: 4px 8px; border-radius: 4px; font-weight: 700; font-size: 0.75rem; color: #fff; text-transform: uppercase; }}
-        .text-col {{ max-width: 380px; word-wrap: break-word; line-height: 1.4; }}
-        .reason-list {{ margin: 0; padding-left: 1.2rem; font-size: 0.85rem; color: #cbd5e1; }}
-        code {{ background: #0f172a; padding: 2px 4px; border-radius: 4px; font-size: 0.8rem; color: #38bdf8; }}
-    </style>
-</head>
-<body>
-    <h1>Anki Review-Finder Report</h1>
-    <p>Gefundene revisionsbedürftige Karten: <strong>{len(flagged_cards)}</strong></p>
-    <table>
-        <thead>
-            <tr>
-                <th style="width: 90px;">Priorität</th>
-                <th style="width: 140px;">Notiz-ID</th>
-                <th>Vorderseite</th>
-                <th>Rückseite</th>
-                <th style="width: 320px;">Diagnose / Messwerte</th>
-            </tr>
-        </thead>
-        <tbody>
-            {table_body}
-        </tbody>
-    </table>
-</body>
-</html>"""
-
-    with open(filename, "w", encoding="utf-8") as f:
-        f.write(html_content)
-
-    print(f"\n[HTML-Report] Detaillierte Diagnose gespeichert in: {filename}")
-
 
 
 def print_summary_report(
