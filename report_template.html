@@ -1,38 +1,275 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="{lang}">
 <head>
     <meta charset="UTF-8">
-    <title>Anki Review Report</title>
+    <title>Anki Analytics Report</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 2rem; background: #0f172a; color: #e2e8f0; }
-        h1 { color: #f8fafc; margin-bottom: 0.5rem; }
-        p { color: #94a3b8; margin-bottom: 1.5rem; }
-        table { width: 100%; border-collapse: collapse; background: #1e293b; border-radius: 8px; overflow: hidden; }
-        th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid #334155; vertical-align: top; }
-        th { background: #0f172a; color: #cbd5e1; font-weight: 600; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em; }
-        tr:hover { background: #243247; }
-        .badge { padding: 4px 8px; border-radius: 4px; font-weight: 700; font-size: 0.75rem; color: #fff; text-transform: uppercase; }
-        .text-col { max-width: 380px; word-wrap: break-word; line-height: 1.4; }
-        .reason-list { margin: 0; padding-left: 1.2rem; font-size: 0.85rem; color: #cbd5e1; }
-        code { background: #0f172a; padding: 2px 4px; border-radius: 4px; font-size: 0.8rem; color: #38bdf8; }
+        :root {
+            --bg-main: #0f172a;
+            --bg-card: #1e293b;
+            --bg-hover: #243247;
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+            --prio-high: #e63946;
+            --prio-medium: #f4a261;
+            --prio-low: #e9c46a;
+            --accent: #38bdf8;
+        }
+
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 2rem; background: var(--bg-main); color: var(--text-main); }
+        h1 { color: #f8fafc; margin-bottom: 0.2rem; }
+        h2.deck-title { color: var(--text-muted); font-size: 1.2rem; margin-top: 0; margin-bottom: 20px; font-weight: normal; }
+        .deck-title span.highlight { color: var(--accent); font-weight: bold; }
+        
+        .dashboard { display: flex; gap: 20px; margin-bottom: 20px; background: var(--bg-card); padding: 15px; border-radius: 8px; }
+        .stat-box { flex: 1; text-align: center; }
+        .stat-value { font-size: 1.5rem; font-weight: bold; color: var(--accent); }
+        
+        .explanation-box { background: var(--bg-card); padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--border-color); }
+        .explanation-box summary { font-weight: bold; cursor: pointer; color: var(--accent); user-select: none; }
+        .explanation-box summary:hover { color: #fff; }
+        .explanation-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; margin-top: 15px; font-size: 0.85rem; }
+        .explanation-grid div { background: var(--bg-main); padding: 12px; border-radius: 6px; border: 1px solid var(--border-color); line-height: 1.4; color: var(--text-muted); }
+        
+        .toolbar { display: flex; gap: 15px; margin-bottom: 15px; align-items: center; }
+        input[type="text"], select, button { padding: 8px; background: var(--bg-main); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 4px; }
+        button { cursor: pointer; background: var(--border-color); font-weight: bold; }
+        button:hover { background: var(--bg-hover); }
+
+        table { width: 100%; border-collapse: collapse; background: var(--bg-card); border-radius: 8px; overflow: hidden; }
+        th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--border-color); vertical-align: top; }
+        th { background: var(--bg-main); font-size: 0.75rem; text-transform: uppercase; }
+        tr:hover { background: var(--bg-hover); }
+        tr.done td { opacity: 0.5; text-decoration: line-through; }
+        
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; color: #fff; text-transform: uppercase; }
+        .badge-high { background-color: var(--prio-high); }
+        .badge-medium { background-color: var(--prio-medium); }
+        .badge-low { background-color: var(--prio-low); }
+        
+        .text-col { max-width: 300px; word-wrap: break-word; }
+        .text-muted { color: var(--text-muted); }
+        code { background: var(--bg-main); padding: 2px 4px; border-radius: 4px; color: var(--accent); }
+
+        @media print {
+            body { background: #fff; color: #000; margin: 0; }
+            .toolbar, .dashboard, .explanation-box { display: none; }
+            table { border: 1px solid #000; }
+            th, td { border-bottom: 1px solid #ccc; color: #000; }
+            .badge { border: 1px solid #000; color: #000; }
+            .deck-title span.highlight { color: #000; }
+        }
     </style>
 </head>
 <body>
-    <h1>Anki Review-Finder Report</h1>
-    <p>Gefundene revisionsbedürftige Karten: <strong>{total_flagged}</strong></p>
-    <table>
+    <h1 data-i18n="title">Anki Analytics Report</h1>
+    <h2 class="deck-title"><span data-i18n="deck_label">Deck:</span> <span class="highlight">{deck_name}</span></h2>
+    
+    <div class="dashboard">
+        <div class="stat-box"><span data-i18n="stat_scanned">Geprüfte Karten</span><br><span class="stat-value">{total_scanned}</span></div>
+        <div class="stat-box"><span data-i18n="stat_flagged">Auffällig</span><br><span class="stat-value">{total_flagged}</span></div>
+        <div class="stat-box"><span data-i18n="stat_clarity">Ø Klarheit</span><br><span class="stat-value">{avg_clarity} / 5.0</span></div>
+    </div>
+
+    <details class="explanation-box">
+        <summary data-i18n="explain_title">📖 Bedeutung der Diagnose-Metriken (Hier ausklappen)</summary>
+        <div class="explanation-grid">
+            <div data-i18n="exp_clarity">...</div>
+            <div data-i18n="exp_scope_bloat">...</div>
+            <div data-i18n="exp_scope_underkill">...</div>
+            <div data-i18n="exp_leak">...</div>
+            <div data-i18n="exp_orphan">...</div>
+            <div data-i18n="exp_aggregation_trap">...</div>
+            <div data-i18n="exp_is_binary">...</div>
+        </div>
+    </details>
+
+    <div class="toolbar">
+        <select id="langToggle" onchange="changeLanguage()">
+            <option value="de">🇩🇪 Deutsch</option>
+            <option value="en">🇬🇧 English</option>
+        </select>
+
+        <input type="text" id="searchInput" data-i18n="search_placeholder" placeholder="Suche in Texten..." onkeyup="filterTable()">
+        <select id="prioFilter" onchange="filterTable()">
+            <option value="all" data-i18n="all_prio">Alle Prioritäten</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+        </select>
+        <button onclick="window.print()" data-i18n="btn_pdf">Als PDF speichern</button>
+        <button onclick="exportMarkdown()" data-i18n="btn_md">Als Markdown exportieren</button>
+    </div>
+
+    <table id="reportTable">
         <thead>
             <tr>
-                <th style="width: 90px;">Priorität</th>
-                <th style="width: 140px;">Notiz-ID</th>
-                <th>Vorderseite</th>
-                <th>Rückseite</th>
-                <th style="width: 320px;">Diagnose / Messwerte</th>
+                <th style="width: 40px;">Check</th>
+                <th style="width: 80px;">Prio</th>
+                <th style="width: 120px;" data-i18n="th_note_id">Notiz-ID</th>
+                <th style="width: 150px;" data-i18n="th_type_deck">Typ & Deck</th>
+                <th data-i18n="th_front">Vorderseite</th>
+                <th data-i18n="th_back">Rückseite</th>
+                <th style="width: 250px;" data-i18n="th_diagnosis">Diagnose / Anki-Info</th>
             </tr>
         </thead>
         <tbody>
             {table_body}
         </tbody>
     </table>
+
+    <script>
+        const translations = {
+            de: {
+                "title": "Anki Analytics Report",
+                "deck_label": "Deck:",
+                "stat_scanned": "Geprüfte Karten",
+                "stat_flagged": "Auffällig",
+                "stat_clarity": "Ø Klarheit",
+                "search_placeholder": "Suche in Texten...",
+                "all_prio": "Alle Prioritäten",
+                "btn_pdf": "Als PDF speichern",
+                "btn_md": "Als Markdown exportieren",
+                "explain_title": "📖 Bedeutung der Diagnose-Metriken (Hier ausklappen)",
+                "no_metric": "Keine spezifische Metrik",
+                "th_note_id": "Notiz-ID",
+                "th_type_deck": "Typ & Deck",
+                "th_front": "Vorderseite",
+                "th_back": "Rückseite",
+                "th_diagnosis": "Diagnose / Anki-Info",
+                "clarity": "Klarheit",
+                "scope_bloat": "Detailüberladung",
+                "scope_underkill": "Zu kurz gegriffen",
+                "leak": "Antwort-Leck",
+                "orphan": "Fehlender Kontext",
+                "aggregation_trap": "Sammelkarten-Falle",
+                "is_binary": "Binärfrage (Ja/Nein)",
+                "exp_clarity": "<strong>Klarheit:</strong> Wie verständlich und eindeutig die Karte formuliert ist. Werte unter 4.0 sind verbesserungswürdig.",
+                "exp_scope_bloat": "<strong>Detailüberladung (Scope Bloat):</strong> Die Antwort enthält unnötige, weitschweifige Fakten, die in der Frage nicht explizit abgefragt wurden.",
+                "exp_scope_underkill": "<strong>Zu kurz gegriffen (Scope Underkill):</strong> Die Karte fragt nach einem breiten Konzept, aber die Antwort liefert nur ein unvollständiges Fragment.",
+                "exp_leak": "<strong>Antwort-Leck (Leak):</strong> Die Frage verrät die Antwort bereits teilweise, z.B. durch identische Wortstämme oder grammatikalische Hinweise.",
+                "exp_orphan": "<strong>Fehlender Kontext (Orphan):</strong> Die Karte steht isoliert im Raum und ergibt ohne den umgebenden Fachbereich keinen logischen Sinn.",
+                "exp_aggregation_trap": "<strong>Sammelkarten-Falle (Aggregation Trap):</strong> Eine sehr offene Frage, die eine unstrukturierte Aufzählung vieler verschiedener Fakten verlangt.",
+                "exp_is_binary": "<strong>Binärfrage:</strong> Die Frage kann einfach mit Ja/Nein oder Wahr/Falsch beantwortet werden, was schlecht für tiefgreifendes Lernen ist."
+            },
+            en: {
+                "title": "Anki Analytics Report",
+                "deck_label": "Target Deck:",
+                "stat_scanned": "Scanned Cards",
+                "stat_flagged": "Flagged",
+                "stat_clarity": "Avg. Clarity",
+                "search_placeholder": "Search texts...",
+                "all_prio": "All Priorities",
+                "btn_pdf": "Save as PDF",
+                "btn_md": "Export as Markdown",
+                "explain_title": "📖 Explanation of Diagnostic Metrics (Click to expand)",
+                "no_metric": "No specific metric",
+                "th_note_id": "Note ID",
+                "th_type_deck": "Type & Deck",
+                "th_front": "Front",
+                "th_back": "Back",
+                "th_diagnosis": "Diagnosis / Anki-Info",
+                "clarity": "Clarity",
+                "scope_bloat": "Scope Bloat",
+                "scope_underkill": "Scope Underkill",
+                "leak": "Answer Leak",
+                "orphan": "Orphan Context",
+                "aggregation_trap": "Aggregation Trap",
+                "is_binary": "Binary Question",
+                "exp_clarity": "<strong>Clarity:</strong> How understandable and unambiguous the card is formulated. Values below 4.0 need improvement.",
+                "exp_scope_bloat": "<strong>Scope Bloat:</strong> The answer contains unnecessary, verbose facts that were not actively asked for in the question.",
+                "exp_scope_underkill": "<strong>Scope Underkill:</strong> The card asks for a broad concept, but the answer provides only an incomplete fragment.",
+                "exp_leak": "<strong>Answer Leak:</strong> The question already partially reveals the answer, e.g., through identical word stems or obvious grammar.",
+                "exp_orphan": "<strong>Orphan Context:</strong> The card stands isolated and makes no sense without the surrounding subject area or prior context.",
+                "exp_aggregation_trap": "<strong>Aggregation Trap:</strong> An open question that requires an unstructured listing of many different facts.",
+                "exp_is_binary": "<strong>Binary Question:</strong> The question can easily be answered with Yes/No or True/False, leading to poor retention."
+            }
+        };
+
+        function changeLanguage() {
+            const lang = document.getElementById("langToggle").value;
+            const t = translations[lang];
+
+            document.querySelectorAll("[data-i18n]").forEach(el => {
+                const key = el.getAttribute("data-i18n");
+                if (t[key]) {
+                    if (el.tagName === "INPUT" && el.type === "text") {
+                        el.placeholder = t[key];
+                    } else {
+                        el.innerHTML = t[key];
+                    }
+                }
+            });
+
+            document.querySelectorAll("[data-i18n-metric]").forEach(el => {
+                const key = el.getAttribute("data-i18n-metric");
+                if (t[key]) {
+                    el.innerText = t[key];
+                }
+            });
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            document.querySelectorAll('.card-check').forEach(box => {
+                const id = box.getAttribute('data-id');
+                if(localStorage.getItem('anki_reviewed_' + id) === 'true') {
+                    box.checked = true;
+                    box.closest('tr').classList.add('done');
+                }
+                box.addEventListener('change', (e) => {
+                    localStorage.setItem('anki_reviewed_' + id, e.target.checked);
+                    e.target.closest('tr').classList.toggle('done', e.target.checked);
+                });
+            });
+
+            changeLanguage();
+        });
+
+        function filterTable() {
+            const searchText = document.getElementById("searchInput").value.toLowerCase();
+            const prioFilter = document.getElementById("prioFilter").value;
+            const rows = document.querySelectorAll("#reportTable tbody tr");
+
+            rows.forEach(row => {
+                const text = row.innerText.toLowerCase();
+                const prio = row.getAttribute("data-prio");
+                const matchesSearch = text.includes(searchText);
+                const matchesPrio = (prioFilter === "all" || prio === prioFilter);
+                
+                row.style.display = (matchesSearch && matchesPrio) ? "" : "none";
+            });
+        }
+
+        function exportMarkdown() {
+            let md = "# Anki Review Report\n\n";
+            const rows = document.querySelectorAll("#reportTable tbody tr");
+            
+            rows.forEach(row => {
+                if (row.style.display === "none") return;
+                const cells = row.querySelectorAll("td");
+                if (cells.length < 7) return;
+                
+                const prio = cells[1].innerText.trim();
+                const id = cells[2].innerText.trim();
+                const typeDeck = cells[3].innerText.replace(/\n/g, " - ").trim();
+                const front = cells[4].innerText.trim();
+                const back = cells[5].innerText.trim();
+                const diag = cells[6].innerText.replace(/\n/g, ", ").trim();
+                
+                md += `### [${prio}] ID: ${id} (${typeDeck})\n`;
+                md += `**Vorderseite:** ${front}\n\n`;
+                md += `**Rückseite:** ${back}\n\n`;
+                md += `**Metriken:** ${diag}\n\n`;
+                md += `---\n\n`;
+            });
+
+            const blob = new Blob([md], { type: "text/markdown;charset=utf-8" });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "anki_report.md";
+            link.click();
+        }
+    </script>
 </body>
 </html>
