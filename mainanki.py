@@ -16,6 +16,7 @@ import os
 import random
 import re
 import sys
+import getpass
 import time
 import urllib.request
 from dataclasses import dataclass, field
@@ -309,9 +310,24 @@ def print_summary_report(metrics: RunMetrics, duration: float, dry_run: bool) ->
 
 async def run_linter(args: argparse.Namespace) -> None:
     api_key = args.api_key or os.getenv("JEV_API_KEY") or os.getenv("TYPESAFE_API_KEY")
+    
+    # Check if API key is missing and prompt the user automatically
     if not api_key:
-        print("[Fehler] Kein API-Key gefunden! Bitte --api-key nutzen oder .env prüfen.")
-        sys.exit(1)
+        print("\n[Info] Es wurde keine .env Datei mit einem API-Key gefunden.")
+        
+        # Use getpass to securely hide the user input in the terminal
+        user_input = getpass.getpass("Bitte füge deinen TypeSafe API-Key hier ein (Eingabe bleibt unsichtbar) und drücke Enter: ").strip()
+        
+        if user_input:
+            # Save the newly entered key to a local .env file
+            with open(".env", "w", encoding="utf-8") as f:
+                f.write(f"JEV_API_KEY={user_input}\n")
+            
+            print("[Erfolg] Key wurde in .env gespeichert!\n")
+            api_key = user_input
+        else:
+            print("[Fehler] Kein Key eingegeben. Abbruch.")
+            sys.exit(1)
 
     t_start = time.perf_counter()
     metrics = RunMetrics()
