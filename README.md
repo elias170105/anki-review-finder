@@ -42,26 +42,22 @@ This project was developed with the assistance of artificial intelligence and re
 ## Installation & Setup
 
 1. Clone the repository:
-
 ```bash
 git clone https://github.com/elias170105/anki-review-finder.git
 cd anki-review-finder
-
 ```
 
 2. Install dependencies:
-
 ```bash
 pip install -r requirements.txt
-
 ```
 
-3. Create a `.env` file in the project root directory:
-
-```env
-JEV_API_KEY=your_api_key_here
-
+3. Run the script:
+There is no need to manually create any configuration files. Simply start the script for your desired Anki deck. On the first run, it will automatically and securely prompt you for your TypeSafe API key directly in the console:
+```bash
+python mainanki.py --deck "YourDeckName" --report
 ```
+*(Your key will be saved in a local `.env` file automatically for future runs).*
 
 ---
 
